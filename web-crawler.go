@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+type Page struct {
+    Title string
+    Url string
+    Links []string
+}
+
 func main() {
 	c := colly.NewCollector()
 	var siteTitle string
@@ -20,23 +26,22 @@ func main() {
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println("Visited", r.Request.URL)
 	})
+    c.OnHTML("title", func(e *colly.HTMLElement) {
+        siteTitle = e.Text
+    })
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		if !strings.Contains(e.Attr("href"), "edgewebware.com") {
+        if !strings.Contains(e.Attr("href"), "https://edgewebware.com") {
 			return
 		}
 		e.Request.Visit(e.Attr("href"))
-	})
-
-	c.OnHTML("title", func(e *colly.HTMLElement) {
-		fmt.Println("Title found: ", e.Text)
 	})
 
 	c.OnScraped(func(r *colly.Response) {
 		fmt.Println("Finished", r.Request.URL)
 	})
 
-	fmt.Println("Site Title: ", siteTitle)
-
 	// Start scraping on https://edgewebware.com
 	c.Visit("https://edgewebware.com")
+    
+	fmt.Println("Site Title: ", siteTitle)
 }
