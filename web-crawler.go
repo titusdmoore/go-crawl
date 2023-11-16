@@ -3,16 +3,18 @@ package main
 import (
 	"fmt"
 	"github.com/gocolly/colly"
-	"strings"
+	"regexp"
 )
 
 type Page struct {
-    Title string
-    Url string
-    Links []string
+	Title string
+	Url   string
+	Links []string
 }
 
 func main() {
+	visited := make(map[string]bool)
+
 	c := colly.NewCollector()
 	var siteTitle string
 
@@ -26,13 +28,18 @@ func main() {
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println("Visited", r.Request.URL)
 	})
-    c.OnHTML("title", func(e *colly.HTMLElement) {
-        siteTitle = e.Text
-    })
+
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-        if !strings.Contains(e.Attr("href"), "https://edgewebware.com") {
+		if match, err := regexp.MatchString("^/docs.*", e.Attr("href")); err != nil || !match {
 			return
 		}
+
+		if visited[e.Attr("href")] {
+			return
+		}
+
+		visited[e.Attr("href")] = true
+		fmt.Println(e.Attr("href"))
 		e.Request.Visit(e.Attr("href"))
 	})
 
@@ -41,7 +48,8 @@ func main() {
 	})
 
 	// Start scraping on https://edgewebware.com
-	c.Visit("https://edgewebware.com")
-    
+	visited["https://keystonejs.com/docs"] = true
+	c.Visit("https://keystonejs.com/docs")
+
 	fmt.Println("Site Title: ", siteTitle)
 }
